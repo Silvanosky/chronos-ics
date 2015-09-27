@@ -1,13 +1,20 @@
 # Chronos ICS
 
-[![Build Status](https://travis-ci.org/epita/chronos-ics.svg?branch=master)](https://travis-ci.org/epita/chronos-ics)
-[![Coverage Status](https://coveralls.io/repos/epita/chronos-ics/badge.svg?branch=master&service=github)](https://coveralls.io/github/epita/chronos-ics?branch=master)
-[![Requirements Status](https://requires.io/github/epita/chronos-ics/requirements.svg?branch=master)](https://requires.io/github/epita/chronos-ics/requirements/?branch=master)
-
 Provide ICS files for chronos @ EPITA (http://chronos.epita.net/)
+Only for Promo 2020 (S1)
+
+I will maybe add a semester and group selector.
+
+You can also edit the list in cron.py to select what you want (like in the search field on the website)
 
 ## Install
 
 ```
 pip install -r requirements.txt
+```
+
+## Execute
+
+```
+python cron.py
 ```

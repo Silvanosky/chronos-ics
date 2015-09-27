@@ -11,24 +11,9 @@ import icalendar
 
 
 ADE_ROOT = 'http://chronos.epita.net'
-PRODID = '-//Laboratoire Assistant <acu@acu.epita.fr>//chronos.py//EN'
+PRODID = '-//Laboratoire Assistant et Charles Villard//chronos.py//EN'
 ROOM_MAPPING = {}
 CLASS_MAPPING = {}
-GROUPS = {
-    'CSI': ("'trainee'", 1, 13, 15, 17),
-    'GISTRE': ("'trainee'", 1, 13, 15, 18),
-    'MTI': ("'trainee'", 1, 13, 15, 19),
-    'SCIA': ("'trainee'", 1, 13, 15, 20),
-    'SIGL': ("'trainee'", 1, 13, 15, 21),
-    'SRS': ("'trainee'", 1, 13, 15, 22),
-    'TCOM': ("'trainee'", 1, 13, 15, 23),
-    'GITM': ("'trainee'", 1, 13, 15, 906),
-    'GRA': ("'trainee'", 1, 13, 14, 1057),
-    'GRB': ("'trainee'", 1, 13, 14, 1058),
-    'APPING1': ("'trainee'", 1, 661, 709),
-    'APPING2': ("'trainee'", 1, 661, 710),
-    'APPING3': ("'trainee'", 1, 661, 689),
-}
 
 
 def compute_date_base(html, date):
@@ -134,48 +119,16 @@ def find_tree_url(soup):
             return '{}{}'.format(ADE_ROOT, frame.get('src'))
     return None
 
-def walk_tree(agent, tree, path):
+def search_tree(agent, tree, path):
     """
     Walk the tree following the given path, and return the URL at the leaf
     """
-    branch_select = 0
-
-    while len(path) > 1:
-        # get Tree
-        tree_frame = agent.get(tree)
-        assert tree_frame.status_code == 200
-
-        found = 0
-
-        if path[0] == "'branch'":
-            branch_select = 1
-            path = path[1:]
-            continue
-
-        for link in tree_frame.soup.find_all('a'):
-            m = re.match('javascript:(.*)\(([^,]*),?.*\)', link.get('href'))
-
-            if m.group(2) and m.group(2) == str(path[0]):
-                tree = "{}/ade/standard/gui/tree.jsp?".format(ADE_ROOT)
-                tree +="expand=false&forceLoad=false&reload=false&scroll=0&"
-
-                if m.group(1) == "openCategory":
-                    tree += "category=" + m.group(2)[1:-1]
-                if m.group(1) == "openBranch":
-                    tree += "branchId={}".format(m.group(2))
-                path = path[1:]
-                found = 1
-                break
-
-        if found == 0:
-            return None
-
-    if path[0]:
-        selector = "selectId"
-        if branch_select:
-            selector = "selectBranchId"
+    tree_frame = agent.get(tree)
+    assert tree_frame.status_code == 200
+    
+    if path:
         r = "{}/ade/standard/gui/tree.jsp?".format(ADE_ROOT)
-        r += "{}={}&forceLoad=false&scroll=0".format(selector, path[0])
+        r += "{}={}".format("search", path)
         return r
     else:
         raise Exception("Can't get calendar")
@@ -194,7 +147,7 @@ def connect_and_select(agent, date, path):
     assert tree != None
 
     # Find the leaf following the given path
-    leaf = walk_tree(agent, tree, path)
+    leaf = search_tree(agent, tree, path)
     assert leaf != None
 
     # Access the leaf
@@ -249,14 +202,14 @@ def ical_output(promo, classes):
             summary += ' - {}'.format(c.get('prof'))
         summary += ' ({})'.format(c.get('room'))
         event['SUMMARY;CHARSET=UTF-8'] = '{}'.format(summary)
-        event['DESCRIPTION'] = '\\n'.join({
+        event['DESCRIPTION'] = '\n'.join({
             "Cours: {}".format(c.get('name')),
             "Prof: {}".format(c.get('prof')),
             "Salle: {}".format(c.get('room'),
             "Groupes: {}".format('-'.join(c.get('groups')))),
         }).replace(',', '\\,')
-        event['DTSTART;TZID=Europe/Paris'] = icalendar.vDatetime(c.get('start'))
-        event['DTEND;TZID=Europe/Paris'] = icalendar.vDatetime(c.get('end'))
+        event['DTSTART'] = icalendar.vDatetime(c.get('start'))
+        event['DTEND'] = icalendar.vDatetime(c.get('end'))
         event['LOCATION'] = c.get('room')
         cal.add_component(event)
 
@@ -266,22 +219,10 @@ def ical_output(promo, classes):
 def chronos(promo, group, numweeks):
     agent = mechanicalsoup.Browser()
     try:
-        path = GROUPS[group]
+        path = group
     except:
         logging.fatal("Can't find path for this calendar: {}".format(group))
         exit(2)
     first = connect_and_select(agent, None, path)
     classes = retrieve_week_classes(agent, first, numweeks)
     return ical_output(promo, classes)
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-promo")
-    parser.add_argument("-group")
-    parser.add_argument("-numweeks", type=int)
-    args = parser.parse_args()
-    logging.basicConfig(level=logging.INFO)
-
-    cal = chronos(promo=args.promo, group=args.group, numweeks=args.numweeks)
-    print(cal.to_ical().decode())
