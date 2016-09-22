@@ -15,6 +15,7 @@ ADE_ROOT = 'http://chronos.epita.net'
 PRODID = '-//Laboratoire Assistant et Charles Villard//chronos.py//EN'
 ROOM_MAPPING = {}
 CLASS_MAPPING = {}
+BASE_TIME = datetime.datetime.strptime("2014-09-01","%Y-%m-%d") # 1 september 2014 = 0
 
 
 def compute_date_base(html, date):
@@ -42,12 +43,15 @@ def compute_date_base(html, date):
     return None
 
 
-def compute_week_number(base, time):
+def compute_week_number():
     """
     Computes the Chronos' week number corresponding to a Unix timestamp.
     It needs the base reference to work
     """
-    return math.floor((time - base) / (7 * 24 * 60 * 60))
+    d2 = datetime.datetime.now()
+    monday1 = BASE_TIME
+    monday2 = (d2 - datetime.timedelta(days=d2.weekday()))
+    return math.floor(((monday2 - monday1).days / 7)-2)
 
 
 def process_raw_data(items):
@@ -142,34 +146,30 @@ def connect_and_select(agent, date, path):
     """
     main_page = agent.get("{}/".format(ADE_ROOT))
     assert main_page.status_code == 200
-
     # Find the tree
     tree = find_tree_url(main_page.soup)
     assert tree != None
-
     # Find the leaf following the given path
     leaf = search_tree(agent, tree, path)
     assert leaf != None
-
     # Access the leaf
     leaf_page = agent.get(leaf)
     assert leaf_page.status_code == 200
-
     # Get the time bar
-    uri = "{}/ade/custom/modules/plannings/pianoWeeks.jsp".format(ADE_ROOT)
-    time_bar = agent.get(uri)
-    assert time_bar.status_code == 200
+    # uri = "{}/ade/custom/modules/plannings/pianoWeeks.jsp".format(ADE_ROOT)
+    # time_bar = agent.get(uri)
+    # assert time_bar.status_code == 200
 
     # Return the computed week origin
-    return compute_date_base(time_bar, date)
+    return compute_week_number()
 
 
-def retrieve_week_classes(agent, first, numweeksstart, numweeksend):
+def retrieve_week_classes(agent, first, numweeks):
     """
     Retrieve the classes of a week given a Unix timestamp in this week.
     """
     # Set the weeks
-    for i in range(numweeksstart, numweeksend):
+    for i in range(0, numweeks):
         uri = "{}/ade/custom/modules/plannings/bounds.jsp?".format(ADE_ROOT)
         uri += "week={}".format(i + first)
         if i == 0:
@@ -251,7 +251,7 @@ def ical_output(promo, classes):
 
     return cal
 
-def chronos(promo, group, numweeksstart, numweeksend):
+def chronos(promo, group, numweeks):
     agent = mechanicalsoup.Browser()
     try:
         path = group
@@ -259,5 +259,5 @@ def chronos(promo, group, numweeksstart, numweeksend):
         logging.fatal("Can't find path for this calendar: {}".format(group))
         exit(2)
     first = connect_and_select(agent, None, path)
-    classes = retrieve_week_classes(agent, first, numweeksstart, numweeksend)
+    classes = retrieve_week_classes(agent, first, numweeks)
     return ical_output(promo, classes)

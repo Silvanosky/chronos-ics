@@ -13,17 +13,10 @@ STUDENT_PROM = 2020
 ASSISTANT_PROM = STUDENT_PROM - 2
 OUTPUT = 'build'
 CALDIR = os.path.join(OUTPUT, 'calendars')
-NUMWEEKSEND = 130
-NUMWEEKSSTART = 105
+NUMWEEKS = 80
 
-GROUPS = ["INFOS3A1-1", "INFOS3A1-2",
-          "INFOS3A2-1", "INFOS3A2-2",
-          "INFOS3B1-1", "INFOS3B1-2",
-          "INFOS3B2-1", "INFOS3B2-2",
-          "INFOS3C1-1", "INFOS3C1-2",
-          "INFOS3C2-1", "INFOS3C2-2",
-          "INFOS1B2-2"
-         ]
+#test
+GROUPS = ["INFOS3A1-1", "INFOS3A1-2"]
          
 def gen_Groups():
     semesters = []
@@ -38,7 +31,7 @@ def gen_Groups():
 
 def get_calendar(promo, group):
     output = '{}/{}.ics'.format(CALDIR, group)
-    cal = chronos.chronos(promo, group, NUMWEEKSSTART, NUMWEEKSEND)
+    cal = chronos.chronos(promo, group, NUMWEEKS)
     print("ecriture: " + output)
     with open('{}'.format(output), 'w') as out:
         out.writelines(cal)
@@ -69,7 +62,7 @@ if __name__ == '__main__':
             os.mkdir(d)
     data = gen_Groups()
     
-    with concurrent.futures.ThreadPoolExecutor(max_workers=60) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
         for j in data:
             for i in j:
                 executor.submit(get_calendar, STUDENT_PROM, i)
