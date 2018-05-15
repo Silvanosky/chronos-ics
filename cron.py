@@ -4,6 +4,7 @@ import os
 import datetime
 import concurrent.futures
 import time
+import urllib.parse
 
 import jinja2
 
@@ -20,17 +21,23 @@ GROUPS = ["INFOS3A1-1", "INFOS3A1-2"]
          
 def gen_Groups():
     semesters = []
-    for semester in range(1,5):
+    for semester in ["1", "2", "3", "4"]:
         r = []
         for letter in ["A", "B", "C", "D", "E"]:
-            for sub in range(1,3):
+            for sub in range(1,4):
                 for english in range(1, 3):
-                    r.append("INFOS" + str(semester) + str(letter) + str(sub) + "-" + str(english))
+                    r.append("INFOS" + semester + str(letter) + str(sub) + "-" + str(english))
         semesters.append(r)
+    r = []
+    for group in ["A", "B", "C"]:
+        for sub in range(1,3):
+            r.append("GR" + group + str(sub))
+    semesters.append(r)
     return semesters
 
 def get_calendar(promo, group):
-    output = '{}/{}.ics'.format(CALDIR, group)
+    time.sleep(0.5)
+    output = '{}/{}.ics'.format(CALDIR, urllib.parse.quote_plus(group))
     cal = chronos.chronos(promo, group, NUMWEEKS)
     print("ecriture: " + output)
     with open('{}'.format(output), 'w') as out:
@@ -41,14 +48,17 @@ def update_index(data):
     template = env.get_template('index.html')
 
     groups = []
-    for i in range(1, 5):
-        groups.append({'title': 'S'+str(i), 'cals': data[i-1]})
+    i = 0;
+    for g in ['S1', 'S2', 'S3', 'S4', 'ING1']:
+        groups.append({'title': g, 'cals': data[i]})
+        i += 1
 
     for group in groups:
         cal = []
         for name in group['cals']:
-            if os.path.isfile('{}/{}.ics'.format(CALDIR, name)):
-                cal.append((name, time.ctime(os.path.getmtime('{}/{}.ics'.format(CALDIR, name)))))
+            if os.path.isfile('{}/{}.ics'.format(CALDIR, urllib.parse.quote_plus(name))):
+                path = '{}/{}.ics'.format(CALDIR, urllib.parse.quote_plus(name))
+                cal.append((name, urllib.parse.quote_plus(name), time.ctime(os.path.getmtime(path))))
         group['cals'] = cal
         
     output = template.render(groups=groups)
@@ -62,7 +72,7 @@ if __name__ == '__main__':
             os.mkdir(d)
     data = gen_Groups()
     
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=64) as executor:
         for j in data:
             for i in j:
                 executor.submit(get_calendar, STUDENT_PROM, i)
