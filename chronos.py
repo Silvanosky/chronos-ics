@@ -15,7 +15,7 @@ ADE_ROOT = 'http://chronos.epita.net'
 PRODID = '-//Laboratoire Assistant et Charles Villard//chronos.py//EN'
 ROOM_MAPPING = {}
 CLASS_MAPPING = {}
-BASE_TIME = datetime.datetime.strptime("2014-09-01","%Y-%m-%d") # 1 september 2014 = 0
+BASE_TIME = datetime.datetime.strptime("2017-08-21","%Y-%m-%d") # 1 september 2017 = 0
 
 
 def compute_date_base(html, date):
@@ -51,7 +51,7 @@ def compute_week_number():
     d2 = datetime.datetime.now()
     monday1 = BASE_TIME
     monday2 = (d2 - datetime.timedelta(days=d2.weekday()))
-    return math.floor(((monday2 - monday1).days / 7)-2)
+    return math.floor(((monday2 - monday1).days / 7)-1) # Get 1 last week in case of error
 
 
 def process_raw_data(items):
