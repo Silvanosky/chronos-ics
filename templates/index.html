@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset='UTF-8'>
-    <link rel='stylesheet prefetch' href='http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css'>
+    <link rel='stylesheet prefetch' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css'>
     <style>
         body {
           padding-top: 5%;
@@ -25,7 +25,7 @@
 <body>
 <div class='container'>
   <div class='header clearfix'>
-    <img alt='logo epita' class='pull-right' height='66' src='http://www.epita.fr/images/logo-epita.png?v=26112014'>
+    <img alt='logo epita' class='pull-right' height='66' src='./logo-epita.png'>
     <h3>Chronos ICS files <small>Silvanosky</small></h3>
   </div>
 
@@ -42,9 +42,9 @@
         {% for cal in group.cals %}
         <tr>
           <td>
-            <a href='calendars/{{ cal[0] }}.ics'>{{ cal[0] }}</a>
+            <a href='calendars/{{ cal[1] }}.ics'>{{ cal[0] }}</a>
           </td>
-          <td>{{ cal[1] }}</td>
+          <td>{{ cal[2] }}</td>
         </tr>
         {% endfor %}
       </tbody>
