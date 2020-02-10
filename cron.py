@@ -4,6 +4,7 @@ import os
 import datetime
 import concurrent.futures
 import time
+
 import urllib.parse
 
 import jinja2
@@ -17,7 +18,7 @@ CALDIR = os.path.join(OUTPUT, 'calendars')
 NUMWEEKS = 80
 
 #test
-GROUPS = ["INFOS3A1-1", "INFOS3A1-2"]
+GROUPS = [[], [], [], [], [], [18, 19, 22]]
          
 def gen_Groups():
     semesters = []
@@ -37,7 +38,7 @@ def gen_Groups():
 
 def get_calendar(promo, group):
     time.sleep(0.5)
-    output = '{}/{}.ics'.format(CALDIR, urllib.parse.quote_plus(group))
+    output = '{}/{}.ics'.format(CALDIR, group)
     cal = chronos.chronos(promo, group, NUMWEEKS)
     print("ecriture: " + output)
     with open('{}'.format(output), 'w') as out:
@@ -49,16 +50,16 @@ def update_index(data):
 
     groups = []
     i = 0;
-    for g in ['S1', 'S2', 'S3', 'S4', 'ING1']:
+    for g in ['S1', 'S2', 'S3', 'S4', 'ING1', 'ING2/3']:
         groups.append({'title': g, 'cals': data[i]})
         i += 1
 
     for group in groups:
         cal = []
         for name in group['cals']:
-            if os.path.isfile('{}/{}.ics'.format(CALDIR, urllib.parse.quote_plus(name))):
-                path = '{}/{}.ics'.format(CALDIR, urllib.parse.quote_plus(name))
-                cal.append((name, urllib.parse.quote_plus(name), time.ctime(os.path.getmtime(path))))
+            if os.path.isfile('{}/{}.ics'.format(CALDIR, urllib.parse.quote_plus(str(name)))):
+                path = '{}/{}.ics'.format(CALDIR, urllib.parse.quote_plus(str(name)))
+                cal.append((name, urllib.parse.quote_plus(str(name)), time.ctime(os.path.getmtime(path))))
         group['cals'] = cal
         
     output = template.render(groups=groups)
@@ -70,11 +71,13 @@ if __name__ == '__main__':
     for d in [OUTPUT, CALDIR]:
         if not os.path.isdir(d):
             os.mkdir(d)
-    data = gen_Groups()
+    data = GROUPS
+    #data = gen_Groups()
     
-    with concurrent.futures.ThreadPoolExecutor(max_workers=64) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
         for j in data:
             for i in j:
                 executor.submit(get_calendar, STUDENT_PROM, i)
+        print("Done")
 
     update_index(data)

@@ -15,7 +15,7 @@ ADE_ROOT = 'http://chronos.epita.net'
 PRODID = '-//Laboratoire Assistant et Charles Villard//chronos.py//EN'
 ROOM_MAPPING = {}
 CLASS_MAPPING = {}
-BASE_TIME = datetime.datetime.strptime("2017-08-21","%Y-%m-%d") # 1 september 2017 = 0
+BASE_TIME = datetime.datetime.strptime("2019-08-26","%Y-%m-%d") # 1 september 2017 = 0
 
 
 def compute_date_base(html, date):
@@ -128,12 +128,16 @@ def search_tree(agent, tree, path):
     """
     Walk the tree following the given path, and return the URL at the leaf
     """
-    tree_frame = agent.get(tree)
-    assert tree_frame.status_code == 200
+    #tree_frame = agent.get(tree)
+    #assert tree_frame.status_code == 200
+    agent.get("{}/ade/standard/gui/tree.jsp?selectCategory=trainee&scroll=0".format(ADE_ROOT))
+    agent.get("{}/ade/standard/gui/tree.jsp?selectBranchId=1&reset=true&forceLoad=false&scroll=0".format(ADE_ROOT))
+    agent.get("{}/ade/standard/gui/tree.jsp?selectBranchId=15&reset=true&forceLoad=false&scroll=0".format(ADE_ROOT))
     
     if path:
         r = "{}/ade/standard/gui/tree.jsp?".format(ADE_ROOT)
-        r += "{}={}".format("search", path)
+        r += "{}={}".format("selectId", path)
+        r += "&reset=true&forceLoad=true&scroll=0"
         return r
     else:
         raise Exception("Can't get calendar")
@@ -156,9 +160,9 @@ def connect_and_select(agent, date, path):
     leaf_page = agent.get(leaf)
     assert leaf_page.status_code == 200
     # Get the time bar
-    # uri = "{}/ade/custom/modules/plannings/pianoWeeks.jsp".format(ADE_ROOT)
-    # time_bar = agent.get(uri)
-    # assert time_bar.status_code == 200
+    uri = "{}/ade/custom/modules/plannings/pianoWeeks.jsp".format(ADE_ROOT)
+    time_bar = agent.get(uri)
+    assert time_bar.status_code == 200
 
     # Return the computed week origin
     return compute_week_number()
@@ -217,7 +221,7 @@ def retrieve_week_classes(agent, first, numweeks):
     # return cal
 
 def ical_output(promo, classes):
-    cal = ics.Calendar(creator=PRODID)
+    events = []
 
     for c in classes:
         name = '{}-{}'.format(c.get('name'), c.get('prof'))
@@ -238,9 +242,9 @@ def ical_output(promo, classes):
         }).replace(',', '\\,')
 
         paris = pytz.timezone('Europe/Paris')
-        begin, end = map(paris.localize, [c.get('start'), c.get('end')])
+        begin, end=map(paris.localize, [c.get('start'), c.get('end')])
 
-        cal.events.append(ics.Event(
+        events.append(ics.Event(
             name=summary,
             begin=begin,
             end=end,
@@ -248,16 +252,16 @@ def ical_output(promo, classes):
             description=description,
             location=c.get('room').capitalize()
         ))
-
+    cal = ics.Calendar(creator=PRODID, events=events)
     return cal
 
 def chronos(promo, group, numweeks):
-    agent = mechanicalsoup.Browser()
+    agent = mechanicalsoup.StatefulBrowser()
     try:
         path = group
     except:
         logging.fatal("Can't find path for this calendar: {}".format(group))
-        exit(2)
     first = connect_and_select(agent, None, path)
     classes = retrieve_week_classes(agent, first, numweeks)
-    return ical_output(promo, classes)
+    cal = ical_output(promo, classes)
+    return cal
