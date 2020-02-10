@@ -18,7 +18,7 @@ CALDIR = os.path.join(OUTPUT, 'calendars')
 NUMWEEKS = 80
 
 #test
-GROUPS = [[], [], [], [], [], [18, 19, 22]]
+GROUPS = [[], [], [], [], [], [18, 19, 22, 23]]
          
 def gen_Groups():
     semesters = []
